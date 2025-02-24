@@ -56,8 +56,8 @@ train_dic = {0:['REC_1507292576905'],
 18: ['REC_1507094478224'],
 19:  ['REC_1507022329230','REC_1507104938830','REC_1507103243726','REC_1507354660471','REC_1507020707163','REC_1507448032599','REC_1507446255664']
 }
-
-FoldePath = "/data1/DataEgo"
+current_path = os.getcwd()
+FoldePath = os.path.join(current_path, "data","DataEgo")
 
 
 
@@ -147,7 +147,7 @@ for datafolder in os.listdir(FoldePath):
         sensor = np.c_[acc_npy[:,:3],gym_npy[:,:3],gym_npy[:,-1]]
         np.save(os.path.join(FoldePath,"images",datafolder,datafolder),sensor)
   
-  
+Frame_path = os.path.join(FoldePath, "images")
 """slide window based division"""      
 empty_df = pd.DataFrame(columns=["frames_path","sensor_path","video_name","start_frame","end_frame","num_frames","label"])
 df_index = 0

@@ -152,12 +152,12 @@ def main():
                    data_length,
                    args.modality,
                    image_tmpl,
-                   visual_path=args.visual_path if not args.cross_dataset else args.cross_visual_path,
+                   visual_path=args.visual_path ,
                    sensor_path=args.sensor_path,
                    num_segments=args.num_segments,
                    mode='val',
                    transform=val_transform,
-                   cross_dataset = args.cross_dataset),
+                   cross_dataset = False),
         batch_size=args.batch_size, shuffle=True,
         num_workers=args.workers, pin_memory=True)
     

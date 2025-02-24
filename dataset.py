@@ -1,4 +1,4 @@
-from video_records import DataEgo_VideoRecord, CrossDataEgo_VideoRecord, MMAct_VideoRecord, mmdata_VideoRecord
+from video_records import DataEgo_VideoRecord, MMAct_VideoRecord, mmdata_VideoRecord
 import torch.utils.data as data
 from PIL import Image
 import os

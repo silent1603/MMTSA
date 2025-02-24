@@ -85,10 +85,10 @@ dependencies:
   - xz=5.2.4
   - zlib=1.2.11
   - zstd=1.3.7
+  - gulpio
   - pip:
     - docopt==0.6.2
     - epic-kitchens==1.7.0
-    - gulpio==540.66
     - jinja2==2.10.1
     - markupsafe==1.1.1
     - opencv-python==4.1.1.26
@@ -98,4 +98,5 @@ dependencies:
     - sh==1.12.14
     - tensorboardx==1.8
     - tqdm==4.36.1
+    - einops==0.4.1
 
