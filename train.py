@@ -14,11 +14,11 @@ from opts import parser
 from tensorboardX import SummaryWriter
 from datetime import datetime
 from collections import OrderedDict
-
+from sklearn.metrics import f1_score
 best_prec1 = 0
 training_iterations = 0
 best_loss = 10000000
-
+best_f1_score = 0
 args = parser.parse_args()
 lr_steps_str = list(map(lambda k: str(int(k)), args.lr_steps))
 experiment_name = '_'.join((args.dataset, args.arch,
@@ -179,6 +179,7 @@ def main():
     else:
         param_groups = filter(lambda p: p.requires_grad, model.parameters())
 
+    print("lr : {0}".format(args.lr))
     optimizer = torch.optim.SGD(param_groups,
                                 args.lr,
                                 momentum=args.momentum,
@@ -217,7 +218,9 @@ def main():
             }, is_best)
 
     summaryWriter.close()
+    global best_f1_score
 
+    print("bestf1 score {0}".format(best_f1_score))
     if args.save_stats:
         save_stats_dir = os.path.join('stats', experiment_dir)
         if not os.path.exists(save_stats_dir):
@@ -252,6 +255,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
         batch_size = input[args.modality[0]].size(0)
         target = target.to(device)
         loss = criterion(output, target)
+
         prec1, prec5 = accuracy(output, target, topk=(1,5))
 
         losses.update(loss.item(), batch_size)
@@ -299,13 +303,15 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
                     lr=optimizer.param_groups[-1]['lr']))
             
             print(message)
+
     training_metrics = {'train_loss': losses.avg, 'train_acc': top1.avg}
     return training_metrics
 
 
 def validate(val_loader, model, criterion, device):
     global training_iterations
-
+    all_targets = []
+    all_predictions = []
     with torch.no_grad():
         batch_time = AverageMeter()
         data_time = AverageMeter()
@@ -327,12 +333,24 @@ def validate(val_loader, model, criterion, device):
             loss = criterion(output, target)
             prec1, prec5 = accuracy(output, target, topk=(1,5))
 
+            _, preds = output.topk(1, 1, True, True)
+            all_targets.extend(target.cpu().numpy())
+            all_predictions.extend(preds.cpu().numpy().flatten())
+
             losses.update(loss.item(), batch_size)
             top1.update(prec1, batch_size)
             top5.update(prec5, batch_size)
 
             batch_time.update(time.time() - end)
             end = time.time()
+
+            # Calculate F1 score (macro-averaged)
+        f1 = f1_score(all_targets, all_predictions, average='macro')
+        print(f"Validation F1 Score: {f1:.4f}")
+        global best_f1_score
+        if f1 > best_f1_score:
+            best_f1_score = f1
+        summaryWriter.add_scalar('data/f1_score/validation', f1, training_iterations)
 
         summaryWriter.add_scalars('data/loss', {
             'validation': losses.avg,
