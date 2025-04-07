@@ -152,7 +152,7 @@ class MMTSADataSet(data.Dataset):
         if self.dataset == 'MMAct':
             video_path = record.video_path
         else:
-            video_path = os.path.join(self.visual_path, record.untrimmed_video_name)
+            video_path = os.path.join(os.path.abspath(self.visual_path), record.untrimmed_video_name)
             
         if modality == 'RGB':
             idx_untrimmed = record.start_frame + idx

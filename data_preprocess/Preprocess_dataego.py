@@ -73,7 +73,10 @@ def vid2jpg(file_name, class_path, dst_class_path):
     try:
         if os.path.exists(dst_directory_path):
             if not os.path.exists(os.path.join(dst_directory_path, 'img_00001.jpg')):
-                subprocess.call('rm -r \"{}\"'.format(dst_directory_path), shell=True)
+                if sys.platform.startswith("linux"):
+                    subprocess.call('rm -r \"{}\"'.format(dst_directory_path), shell=True)
+                elif sys.platform.startswith("win32"):
+                    subprocess.call('del /s /q \"{}\"'.format(dst_directory_path), shell=True)
                 print('remove {}'.format(dst_directory_path))
                 os.mkdir(dst_directory_path)
             else:
@@ -84,9 +87,13 @@ def vid2jpg(file_name, class_path, dst_class_path):
     except:
         print(dst_directory_path)
         return
-    cmd = 'ffmpeg -i \"{}\" -threads 1 -r 15 -vf scale=-1:331 -q:v 0 \"{}/img_%05d.jpg\"'.format(video_file_path, dst_directory_path)
-    subprocess.call(cmd, shell=True,
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    if sys.platform.startswith("linux"):
+        cmd = 'ffmpeg -i \"{}\" -threads 1 -r 15 -vf scale=-1:331 -q:v 0 \"{}/img_%05d.jpg\"'.format(video_file_path, dst_directory_path)
+    elif sys.platform.startswith("win32"):
+        cmd = 'ffmpeg -i \"{}\" -threads 1 -r 15 -vf scale=-1:331 -q:v 0 \"{}\\img_%05d.jpg\"'.format(video_file_path, dst_directory_path)
+   
+    subprocess.call(cmd, shell=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     
     
 for datafolder in os.listdir(FoldePath):
@@ -180,7 +187,6 @@ for label_n in range(20):
     train_df = pd.concat([train_df, tem_df[tem_df['video_name'].isin(tem_vn)]], ignore_index=True)
     test_df = pd.concat([test_df, tem_df[~tem_df['video_name'].isin(tem_vn)]],ignore_index=True)
     
-
 """output"""
 with open("train_dataego_file","wb") as f:
     pickle.dump(train_df, f)
