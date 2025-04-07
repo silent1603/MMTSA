@@ -18,3 +18,5 @@ dependencies:
   - cuda-nvtx
   - tensorboardX
   - pip
+  - pip:
+      - pyts
