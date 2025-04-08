@@ -14,7 +14,8 @@ from opts import parser
 from tensorboardX import SummaryWriter
 from datetime import datetime
 from collections import OrderedDict
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score,confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
 best_prec1 = 0
 training_iterations = 0
 best_loss = 10000000
@@ -344,8 +345,8 @@ def validate(val_loader, model, criterion, device):
             batch_time.update(time.time() - end)
             end = time.time()
 
-            # Calculate F1 score (macro-averaged)
-        f1 = f1_score(all_targets, all_predictions, average='macro')
+           
+        f1 = f1_score(all_targets, all_predictions,average='weighted')
         print(f"Validation F1 Score: {f1:.4f}")
         global best_f1_score
         if f1 > best_f1_score:
@@ -353,15 +354,24 @@ def validate(val_loader, model, criterion, device):
         summaryWriter.add_scalar('data/f1_score/validation', f1, training_iterations)
 
         summaryWriter.add_scalars('data/loss', {
-            'validation': losses.avg,
-        }, training_iterations)
+            'validation': losses.avg,}, training_iterations)
         summaryWriter.add_scalars('data/precision/top1', {
             'validation': top1.avg,
         }, training_iterations)
         summaryWriter.add_scalars('data/precision/top5', {
             'validation': top5.avg
         }, training_iterations)
+        cm = confusion_matrix(all_targets, all_predictions)
+        print("Confusion Matrix:\n", cm)
 
+        # Optional: Plot confusion matrix
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+        disp.plot(cmap=plt.cm.Blues)
+        plt.title("Confusion Matrix")
+        os.makedirs("plots", exist_ok=True)  # create folder if it doesn't exist
+        plot_path = f"plots/confusion_matrix_{training_iterations}.png"
+        plt.savefig(plot_path)
+        print(f"Confusion matrix saved to {plot_path}")
         message = ('Testing Results: '
                     'Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f} '
                     'Loss {loss.avg:.5f}').format(top1=top1,
