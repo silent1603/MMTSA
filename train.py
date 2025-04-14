@@ -20,7 +20,9 @@ best_prec1 = 0
 training_iterations = 0
 best_loss = 10000000
 best_f1_score = 0
+best_confusion_matrix = ""
 args = parser.parse_args()
+val_loss_history = []
 lr_steps_str = list(map(lambda k: str(int(k)), args.lr_steps))
 experiment_name = '_'.join((args.dataset, args.arch,
                             ''.join(args.modality).lower(),
@@ -35,7 +37,28 @@ experiment_dir = os.path.join(experiment_name, datetime.now().strftime('%b%d_%H-
 log_dir = os.path.join('runs', experiment_dir)
 summaryWriter = SummaryWriter(logdir=log_dir)
 
-
+data_ego_activity_labels  = {
+ 'cooking': 0,
+ 'cycling': 1,
+ 'riding elevator': 2,
+ 'walking down/upstairs': 3,
+ 'push ups': 4,
+ 'reading': 5,
+ 'washing dishes': 6,
+ 'working on pc': 7,
+ 'browsing mobile phone': 8,
+ 'talking with people': 9,
+ 'chopping': 10,
+ 'sit ups': 11,
+ 'running': 12,
+ 'lying down': 13,
+ 'eating': 14,
+ 'riding escalator': 15,
+ 'writing': 16,
+ 'brushing teeth': 17,
+ 'watching tv': 18,
+ 'walking': 19
+ }
 
 def main():
     global args, best_prec1, train_list, experiment_dir, best_loss
@@ -220,8 +243,33 @@ def main():
 
     summaryWriter.close()
     global best_f1_score
+    global best_confusion_matrix
+    train_loss = stats_dict['train_loss'][args.epochs]
+    val_loss = stats_dict['val_loss'][:args.epochs]
 
-    print("bestf1 score {0}".format(best_f1_score))
+    # Train Loss Plot
+    plt.figure(figsize=(14, 10))
+    plt.plot(train_loss, label='Train Loss', color='orange', linewidth=2)
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Train Loss')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("plots/train_loss.png", bbox_inches='tight')
+    plt.close()
+
+    # Validation Loss Plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(val_loss, label='Validation Loss', color='blue', linewidth=2)
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Validation Loss')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("plots/val_loss.png", bbox_inches='tight')
+    plt.close()
+    
+    print("bestf1 score {0} : {1}".format(best_f1_score,best_confusion_matrix))
     if args.save_stats:
         save_stats_dir = os.path.join('stats', experiment_dir)
         if not os.path.exists(save_stats_dir):
@@ -349,8 +397,10 @@ def validate(val_loader, model, criterion, device):
         f1 = f1_score(all_targets, all_predictions,average='weighted')
         print(f"Validation F1 Score: {f1:.4f}")
         global best_f1_score
+        global best_confusion_matrix
         if f1 > best_f1_score:
             best_f1_score = f1
+            best_confusion_matrix = f"confusion_matrix_{training_iterations}" 
         summaryWriter.add_scalar('data/f1_score/validation', f1, training_iterations)
 
         summaryWriter.add_scalars('data/loss', {
@@ -362,12 +412,15 @@ def validate(val_loader, model, criterion, device):
             'validation': top5.avg
         }, training_iterations)
         cm = confusion_matrix(all_targets, all_predictions)
+        cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        cm_percent = np.round(cm_normalized * 100, 2)  # convert to percentage and round
         print("Confusion Matrix:\n", cm)
 
         # Optional: Plot confusion matrix
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-        disp.plot(cmap=plt.cm.Blues)
-        plt.title("Confusion Matrix")
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm_percent,display_labels=data_ego_activity_labels)
+        fig, ax = plt.subplots(figsize=(12, 10))
+        disp.plot(cmap=plt.cm.Blues, ax=ax, xticks_rotation='vertical', values_format=".2f")
+        plt.title("Confusion Matrix (%)")
         os.makedirs("plots", exist_ok=True)  # create folder if it doesn't exist
         plot_path = f"plots/confusion_matrix_{training_iterations}.png"
         plt.savefig(plot_path)
