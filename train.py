@@ -244,7 +244,7 @@ def main():
     summaryWriter.close()
     global best_f1_score
     global best_confusion_matrix
-    train_loss = stats_dict['train_loss'][args.epochs]
+    train_loss = stats_dict['train_loss'][:args.epochs]
     val_loss = stats_dict['val_loss'][:args.epochs]
 
     # Train Loss Plot
@@ -268,8 +268,11 @@ def main():
     plt.grid(True)
     plt.savefig("plots/val_loss.png", bbox_inches='tight')
     plt.close()
-    
-    print("bestf1 score {0} : {1}".format(best_f1_score,best_confusion_matrix))
+    content = "bestf1 score {0} : {1}".format(best_f1_score,best_confusion_matrix)
+    file_path = os.path.join("plots", "output.txt")
+    with open(file_path, "w") as f:
+        f.write(content)
+    print(content)
     if args.save_stats:
         save_stats_dir = os.path.join('stats', experiment_dir)
         if not os.path.exists(save_stats_dir):
