@@ -126,7 +126,7 @@ MMTSA Configurations:
                     self.input_mean[m] = [104, 117, 128]
             self.feature_dim = 1024
         elif base_model == 'mobilenetv2':
-            from mobilenet_v2 import mobilenet_v2
+            from torchvision.models import mobilenet_v2
             self.base_model = OrderedDict()
             self.input_size = OrderedDict()
             self.input_mean = OrderedDict()

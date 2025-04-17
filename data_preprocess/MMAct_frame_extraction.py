@@ -65,8 +65,11 @@ def main(base_path, image_sub_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Convert videos to images')
-    parser.add_argument('--base_path', default='/data1/MMAct/', type=str, help='Base path for the MMAct dataset')
-    parser.add_argument('--image_sub_path', default='/data1/MMAct/Image_subject', type=str, help='Path where images will be stored')
+    cwd = os.getcwd()
+    base_path = os.path.join(cwd,"data","MMAct")
+    image_subject =  os.path.join(base_path,"Image_subject")
+    parser.add_argument('--base_path', default=base_path, type=str, help='Base path for the MMAct dataset')
+    parser.add_argument('--image_sub_path', default=image_subject, type=str, help='Path where images will be stored')
     args = parser.parse_args()
 
     main(args.base_path, args.image_sub_path)
