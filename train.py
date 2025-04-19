@@ -36,7 +36,7 @@ experiment_name = '_'.join((args.dataset, args.arch,
 experiment_dir = os.path.join(experiment_name, datetime.now().strftime('%b%d_%H-%M-%S'))
 log_dir = os.path.join('runs', experiment_dir)
 summaryWriter = SummaryWriter(logdir=log_dir)
-
+data_label = None
 data_ego_activity_labels  = {
  'cooking': 0,
  'cycling': 1,
@@ -60,16 +60,59 @@ data_ego_activity_labels  = {
  'walking': 19
  }
 
+
+mmact_activity_labels = {
+    "carrying" : 0 ,
+    "checking_time" : 1 ,
+    "closing" : 2 ,
+    "crouching" :3 ,
+    "entering" :4 ,
+    "exiting" : 5 ,
+    "fall" :6 ,
+    "jumping" : 7 ,
+    "kicking" : 8,
+    "loitering" : 9 , 
+    "looking_around" : 10 , 
+    "opening" : 11 , 
+    "picking_up" : 12 , 
+    "pointing" : 13 ,
+    "pulling" : 14 , 
+    "pushing" : 15 , 
+    "running" : 16 , 
+    "setting_down" : 17 , 
+    "standing" : 18, 
+    "talking" : 19, 
+    "talking_on_phone" :20 ,
+    "throwing" : 21 , 
+    "transferring_object" : 22 , 
+    "using_phone" : 23, 
+    "walking" : 24, 
+    "waving_hand": 25, 
+    "drinking" : 26, 
+    "pocket_in" : 27, 
+    "pocket_out" : 28,
+    "sitting" : 29, 
+    "sitting_down" : 30 , 
+    "standing_up" : 31, 
+    "talking_on_phone_desk" :32 ,
+    "using_pc" : 33, 
+    "using_phone_desk" : 34 , 
+    "carrying_heavy" : 35,
+    "carrying_light" : 36
+}
+
 def main():
     global args, best_prec1, train_list, experiment_dir, best_loss
     args = parser.parse_args()
-
+    global data_label 
     if args.dataset == 'dataEgo':
         num_class = 20
+        data_label = data_ego_activity_labels
     elif args.dataset == 'mmdata':
         num_class = 20
     elif args.dataset == 'MMAct':
         num_class = 37
+        data_label = mmact_activity_labels
     else:
         raise ValueError('Unknown dataset ' + args.dataset)
 
@@ -420,7 +463,8 @@ def validate(val_loader, model, criterion, device):
         print("Confusion Matrix:\n", cm)
 
         # Optional: Plot confusion matrix
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm_percent,display_labels=data_ego_activity_labels)
+
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm_percent,display_labels=data_label)
         fig, ax = plt.subplots(figsize=(12, 10))
         disp.plot(cmap=plt.cm.Blues, ax=ax, xticks_rotation='vertical', values_format=".2f")
         plt.title("Confusion Matrix (%)")
