@@ -138,7 +138,7 @@ MMTSA Configurations:
             self.input_mean = OrderedDict()
             self.input_std = OrderedDict()
             for m in self.modality:
-                self.base_model[m] = mobilenet_v2()
+                self.base_model[m] = mobilenet_v2(pretrained=True)
                 self.input_std[m] = [0.229, 0.224, 0.225]
                 self.input_mean[m] = [0.485, 0.456, 0.406]
                 self.input_size[m] = 224
@@ -152,7 +152,7 @@ MMTSA Configurations:
             self.input_mean = OrderedDict()
             self.input_std = OrderedDict()
             for m in self.modality:
-                self.base_model[m] = resnet101()
+                self.base_model[m] = resnet101(pretrained=True)
                 self.input_std[m] = [0.229, 0.224, 0.225]
                 self.input_mean[m] = [0.485, 0.456, 0.406]
                 self.input_size[m] = 224
@@ -166,7 +166,7 @@ MMTSA Configurations:
             self.input_mean = OrderedDict()
             self.input_std = OrderedDict()
             for m in self.modality:
-                self.base_model[m] = resnet50()
+                self.base_model[m] = resnet50(pretrained=True)
                 self.input_std[m] = [0.229, 0.224, 0.225]
                 self.input_mean[m] = [0.485, 0.456, 0.406]
                 self.input_size[m] = 224
