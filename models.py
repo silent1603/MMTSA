@@ -99,6 +99,12 @@ MMTSA Configurations:
         elif arch == 'mobilenetv2':
             for m in self.modality:
                 self.base_model[m].classifier = nn.Identity()
+        elif arch == 'resnet101':
+            for m in self.modality:
+                self.base_model[m].classifier = nn.Identity()
+        elif arch == 'resnet50':
+            for m in self.modality:
+                self.base_model[m].classifier = nn.Identity()
 
     def _prepare_mmtsa(self):
 
@@ -139,7 +145,34 @@ MMTSA Configurations:
                 if m == 'RGB':
                     self.input_mean[m] = [0.485, 0.456, 0.406]
             self.feature_dim = 1280
-                
+        elif base_model == 'resnet101':
+            from torchvision.models import resnet101
+            self.base_model = OrderedDict()
+            self.input_size = OrderedDict()
+            self.input_mean = OrderedDict()
+            self.input_std = OrderedDict()
+            for m in self.modality:
+                self.base_model[m] = resnet101()
+                self.input_std[m] = [0.229, 0.224, 0.225]
+                self.input_mean[m] = [0.485, 0.456, 0.406]
+                self.input_size[m] = 224
+                if m == 'RGB':
+                    self.input_mean[m] = [0.485, 0.456, 0.406]
+            self.feature_dim = 2048
+        elif base_model == 'resnet50':
+            from torchvision.models import resnet50
+            self.base_model = OrderedDict()
+            self.input_size = OrderedDict()
+            self.input_mean = OrderedDict()
+            self.input_std = OrderedDict()
+            for m in self.modality:
+                self.base_model[m] = resnet50()
+                self.input_std[m] = [0.229, 0.224, 0.225]
+                self.input_mean[m] = [0.485, 0.456, 0.406]
+                self.input_size[m] = 224
+                if m == 'RGB':
+                    self.input_mean[m] = [0.485, 0.456, 0.406]
+            self.feature_dim = 2048
         else:
             raise ValueError('Unknown base model: {}'.format(base_model))
 
