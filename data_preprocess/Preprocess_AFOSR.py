@@ -7,6 +7,7 @@ import random
 import numpy as np
 import pandas as pd
 import pickle
+from pathlib import Path
 
 action2id = {
  'G1': 0,
@@ -22,60 +23,8 @@ action2id = {
  'G11': 10,
  'G12': 11
 }
-
-train_dic = {}
 current_path = os.getcwd()
 FoldePath = os.path.join(current_path, "data","AFOSR")
-
-
-
-
-"""Frame extraction"""
-
-def vid2jpg(file_name, class_path, dst_class_path):
-    if '.mp4' not in file_name:
-        return
-    name, ext = os.path.splitext(file_name)
-    dst_directory_path = os.path.join(dst_class_path, name)
-
-    video_file_path = os.path.join(class_path, file_name)
-    try:
-        if os.path.exists(dst_directory_path):
-            if not os.path.exists(os.path.join(dst_directory_path, 'img_00001.jpg')):
-                if sys.platform.startswith("linux"):
-                    subprocess.call('rm -r \"{}\"'.format(dst_directory_path), shell=True)
-                elif sys.platform.startswith("win32"):
-                    subprocess.call('del /s /q \"{}\"'.format(dst_directory_path), shell=True)
-                print('remove {}'.format(dst_directory_path))
-                os.mkdir(dst_directory_path)
-            else:
-                print('*** convert has been done: {}'.format(dst_directory_path))
-                return
-        else:
-            os.mkdir(dst_directory_path)
-    except:
-        print(dst_directory_path)
-        return
-
-    if sys.platform.startswith("linux"):
-        cmd = 'ffmpeg -i \"{}\" -threads 1 -r 30 -vf scale=-1:331 -q:v 0 \"{}/img_%05d.jpg\"'.format(video_file_path, dst_directory_path)
-    elif sys.platform.startswith("win32"):
-        cmd = 'ffmpeg -i \"{}\" -threads 1 -r 30 -vf scale=-1:331 -q:v 0 \"{}\\img_%05d.jpg\"'.format(video_file_path, dst_directory_path)
-   
-    subprocess.call(cmd, shell=True,stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    
-    
-for datafolder in os.listdir(FoldePath):
-    if '.' in datafolder:
-        pass
-    else:
-        for file in os.listdir(os.path.join(FoldePath,datafolder)):
-            if ".mp4" not in file:
-                pass
-            else:
-                # print(file)
-                # print(os.path.join(FoldePath,datafolder))
-                vid2jpg(file, os.path.join(FoldePath,datafolder),os.path.join(FoldePath,"images"))
 
 
 """Sensor data produce"""
@@ -141,40 +90,30 @@ for image_folder in os.listdir(Frame_path):
             empty_df.loc[df_index] = [os.path.join(Frame_path,image_folder),os.path.join(Frame_path,image_folder,image_folder+".npy"),str(image_folder),start,end-1,end-1-start,image_npy[:,-1][start]]
             df_index+=1
         i+=15*10
-        
 
-"""train-test split"""
-train_df = pd.DataFrame(columns=["frames_path","sensor_path","video_name","start_frame","end_frame","num_frames","label"])
-test_df = pd.DataFrame(columns=["frames_path","sensor_path","video_name","start_frame","end_frame","num_frames","label"])
-for label_n in range(20):
-
-    tem_vn = train_dic[label_n]
-    print(tem_vn)
-    tem_df = empty_df.loc[empty_df["label"]==str(label_n)].sample(frac=1)
-    
-    # train_df = train_df.append(tem_df[tem_df['video_name'].isin(tem_vn)],ignore_index=True)
-    # test_df = test_df.append(tem_df[~tem_df['video_name'].isin(tem_vn)],ignore_index=True)
-    train_df = pd.concat([train_df, tem_df[tem_df['video_name'].isin(tem_vn)]], ignore_index=True)
-    test_df = pd.concat([test_df, tem_df[~tem_df['video_name'].isin(tem_vn)]],ignore_index=True)
-
-
-
-image_output_dir = os.path.join(root_dir, "images")
+image_output_dir = os.path.join(FoldePath, "images")
 os.makedirs(image_output_dir, exist_ok=True)
+data_train_path = os.path.join(FoldePath, "data_val")
+data_val_path = os.path.join(FoldePath, "data_train")
 
-data = []
+val_df = pd.DataFrame(data, columns=[
+    "frames_path", "sensor_path", "video_name",
+    "start_frame", "end_frame", "num_frames", "label"
+])
 
-for split in ["val", "test"]:
-    split_path = os.path.join(root_dir, split)
-    for user_name in os.listdir(split_path):
-        user_path = os.path.join(split_path, user_name)
+train_df = pd.DataFrame(data, columns=[
+    "frames_path", "sensor_path", "video_name",
+    "start_frame", "end_frame", "num_frames", "label"
+])
+
+def process(path:Path,df:pd.DataFrame):
+    for user_name in path:
         if not os.path.isdir(user_path):
             continue
-        for session_name in os.listdir(user_path):
+        for session in os.listdir(user_path):
             session_path = os.path.join(user_path, session_name)
             if not os.path.isdir(session_path):
                 continue
-
             for file in os.listdir(session_path):
                 if not file.endswith(".mp4"):
                     continue
@@ -186,8 +125,8 @@ for split in ["val", "test"]:
                 if not os.path.exists(csv_path):
                     print(f"❌ Missing CSV for {mp4_path}")
                     continue
-
-                # Create unique image output path
+                
+               # Create unique image output path
                 video_id = f"{split}_{user_name}_{session_name}_{base_name}"
                 frames_dir = os.path.join(image_output_dir, video_id)
                 os.makedirs(frames_dir, exist_ok=True)
@@ -219,15 +158,11 @@ for split in ["val", "test"]:
                     "num_frames": num_frames,
                     "label": user_name  # you can change this to something else
                 })
+            
 
-# Save metadata as pickle
-df = pd.DataFrame(data, columns=[
-    "frames_path", "sensor_path", "video_name",
-    "start_frame", "end_frame", "num_frames", "label"
-])
-pickle_path = os.path.join(root_dir, "metadata.pkl")
-df.to_pickle(pickle_path)
-print(f"✅ Metadata saved to {pickle_path}")
+process(data_val_path,val_df)
+process(data_train_path,train_df)
+
 
 """output"""
 with open("train_dataego_file","wb") as f:
