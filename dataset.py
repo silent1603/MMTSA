@@ -1,4 +1,4 @@
-from video_records import DataEgo_VideoRecord, MMAct_VideoRecord, mmdata_VideoRecord
+from video_records import DataEgo_VideoRecord, MMAct_VideoRecord, mmdata_VideoRecord , AFOSR_VideoRecord
 import torch.utils.data as data
 from PIL import Image
 import os
@@ -184,6 +184,8 @@ class MMTSADataSet(data.Dataset):
                 self.video_list = [CrossDataEgo_VideoRecord(tup) for tup in self.list_file.iterrows()]
         elif self.dataset == 'MMAct':
             self.video_list = [MMAct_VideoRecord(tup) for tup in self.list_file.iterrows()]
+        elif self.dataset == 'AFOSR':
+            self.video_list = [AFOSR_VideoRecord(tup) for tup in self.list_file.iterrows()]
         elif self.dataset == 'mmdata':
             self.video_list = [mmdata_VideoRecord(tup) for tup in self.list_file.iterrows()]
 

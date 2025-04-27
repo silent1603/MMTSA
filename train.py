@@ -101,6 +101,21 @@ mmact_activity_labels = {
     "carrying_light" : 36
 }
 
+afosr_activity_labels = {
+ 'G1': 0,
+ 'G2': 1,
+ 'G3': 2,
+ 'G4': 3,
+ 'G5': 4,
+ 'G6': 5,
+ 'G7': 6,
+ 'G8': 7,
+ 'G9': 8,
+ 'G10': 9,
+ 'G11': 10,
+ 'G12': 11
+}
+
 def main():
     global args, best_prec1, train_list, experiment_dir, best_loss
     args = parser.parse_args()
@@ -108,6 +123,9 @@ def main():
     if args.dataset == 'dataEgo':
         num_class = 20
         data_label = data_ego_activity_labels
+    if args.dataset == 'AFOSR':
+        num_class = 12
+        data_label = afosr_activity_labels
     elif args.dataset == 'mmdata':
         num_class = 20
     elif args.dataset == 'MMAct':

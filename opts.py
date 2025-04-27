@@ -1,6 +1,6 @@
 import argparse
 parser = argparse.ArgumentParser(description="PyTorch implementation of MMTSA")
-parser.add_argument('dataset', type=str, choices=['dataEgo', 'UTD-MHAD', 'MMAct', 'mmdata'])
+parser.add_argument('dataset', type=str, choices=['dataEgo', 'UTD-MHAD', 'MMAct', 'mmdata',"AFOSR"])
 parser.add_argument('modality', type=str, nargs='+', choices=['RGB', 'Sensor', 'AccPhone', 'AccWatch', 'Gyro', 'Orie'],
 	                default=['RGB', 'AccPhone', 'AccWatch', 'Gyro', 'Orie'])
 parser.add_argument('--train_list', type=str)
