@@ -149,7 +149,7 @@ class MMTSADataSet(data.Dataset):
 
 
     def _load_data(self, modality, record, idx):
-        if self.dataset == 'MMAct':
+        if self.dataset == 'MMAct' or self.dataset == 'AFOSR':
             video_path = record.video_path
         else:
             video_path = os.path.join(os.path.abspath(self.visual_path), record.untrimmed_video_name)

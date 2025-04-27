@@ -12,7 +12,7 @@ class AFOSR_VideoRecord(VideoRecord):
     
     @property
     def video_path(self):
-        return self._series['frame_path']
+        return self._series['frames_path']
     
     @property
     def sensor_path(self):
