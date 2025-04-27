@@ -96,7 +96,7 @@ def process(base_path:Path,data_list: list):
                 data_list.append({
                     "frames_path": image_session_path,
                     "sensor_path": csv_path,
-                    "video_name": file,
+                    "video_name": base_name,
                     "start_frame": 1,
                     "end_frame": num_frames - 1,
                     "num_frames": num_frames - 1,
@@ -119,6 +119,6 @@ with open("train_afosr_file","wb") as f:
     pickle.dump(train_df, f)
     
 with open("test_afosr_file","wb") as f:
-    pickle.dump(test_df, f)
+    pickle.dump(val_df, f)
 
 
