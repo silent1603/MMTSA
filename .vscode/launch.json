@@ -5,12 +5,37 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Current File with Arguments",
+            "name": "Python Debugger (AFSOR - BNInception)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "${workspaceFolder}/train.py",
             "console": "integratedTerminal",
-            "args": "${command:pickArgs}"
+            "args": "AFOSR  RGB Sensor --arch=BNInception --train_list train_afosr_file --val_list test_afosr_file --visual_path data\\AFOSR\\images --save_stats"
+        }, 
+        {
+            "name": "Python Debugger (AFSOR -  mobilenetv2)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/train.py",
+            "console": "integratedTerminal",
+            "args": "AFOSR  RGB Sensor --arch=mobilenetv2 --train_list train_afosr_file --val_list test_afosr_file --visual_path data\\AFOSR\\images --save_stats"
+        },
+        {
+            "name": "Python Debugger (AFSOR -  resnet101)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/train.py",
+            "console": "integratedTerminal",
+            "args": "AFOSR  RGB Sensor --arch=resnet101 --train_list train_afosr_file --val_list test_afosr_file --visual_path data\\AFOSR\\images --save_stats"
+        },
+
+        {
+            "name": "Python Debugger (AFSOR -  resnet50)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/train.py",
+            "console": "integratedTerminal",
+            "args": "AFOSR  RGB Sensor --arch=resnet50 --train_list train_afosr_file --val_list test_afosr_file --visual_path data\\AFOSR\\images --save_stats"
         }
     ]
 }
