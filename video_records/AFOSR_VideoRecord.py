@@ -36,8 +36,8 @@ class AFOSR_VideoRecord(VideoRecord):
 
     @property
     def fps(self):
-        return {'RGB': 10,
-                'Sensor': 10 
+        return {'RGB': 30,
+                'Sensor': 100 
                }
 
     @property
