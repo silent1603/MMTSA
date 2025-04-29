@@ -99,12 +99,9 @@ MMTSA Configurations:
         elif arch == 'mobilenetv2':
             for m in self.modality:
                 self.base_model[m].classifier = nn.Identity()
-        elif arch == 'resnet101':
+        elif arch == 'resnet50' or arch == 'resnet101':
             for m in self.modality:
-                self.base_model[m].classifier = nn.Identity()
-        elif arch == 'resnet50':
-            for m in self.modality:
-                self.base_model[m].classifier = nn.Identity()
+                self.base_model[m].fc = nn.Identity()
 
     def _prepare_mmtsa(self):
 
