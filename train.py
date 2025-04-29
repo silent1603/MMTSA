@@ -123,7 +123,7 @@ def main():
     if args.dataset == 'dataEgo':
         num_class = 20
         data_label = data_ego_activity_labels
-    if args.dataset == 'AFOSR':
+    elif args.dataset == 'AFOSR':
         num_class = 12
         data_label = afosr_activity_labels
     elif args.dataset == 'mmdata':
