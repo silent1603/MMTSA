@@ -14,12 +14,16 @@ from opts import parser
 from tensorboardX import SummaryWriter
 from datetime import datetime
 from collections import OrderedDict
-from sklearn.metrics import f1_score,confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import f1_score,confusion_matrix, ConfusionMatrixDisplay,accuracy_score, precision_score, recall_score
 import matplotlib.pyplot as plt
 best_prec1 = 0
 training_iterations = 0
 best_loss = 10000000
 best_f1_score = 0
+best_acc = 0
+best_precision = 0
+best_recall = 0
+best_metrics_path = "plots/best_metrics.txt"
 best_confusion_matrix = ""
 args = parser.parse_args()
 val_loss_history = []
@@ -279,7 +283,11 @@ def main():
         stats_dict = {'train_loss': np.zeros((args.epochs,)),
                         'val_loss': np.zeros((args.epochs,)),
                         'train_acc': np.zeros((args.epochs,)),
-                        'val_acc': np.zeros((args.epochs,))}
+                        'val_acc': np.zeros((args.epochs,)),
+                        'acc':0,
+                        'precision':0,
+                        'f1_score':0,
+                        'recall':0}
     model = model.to(device)
     for epoch in range(args.start_epoch, args.epochs):
         training_metrics = train(train_loader, model, criterion, optimizer, epoch, device)
@@ -303,10 +311,12 @@ def main():
             }, is_best)
 
     summaryWriter.close()
-    global best_f1_score
+    global best_f1_score, best_acc, best_precision, best_recall, best_metrics_path
     global best_confusion_matrix
     train_loss = stats_dict['train_loss'][:args.epochs]
-    val_loss = stats_dict['val_loss'][:args.epochs]
+    val_loss_array = stats_dict['val_loss'][:args.epochs]
+    valid_epochs = np.where(val_loss_array != 0)[0]
+    valid_val_loss = val_loss_array[valid_epochs]
 
     # Train Loss Plot
     plt.figure(figsize=(14, 10))
@@ -320,8 +330,8 @@ def main():
     plt.close()
 
     # Validation Loss Plot
-    plt.figure(figsize=(10, 6))
-    plt.plot(val_loss, label='Validation Loss', color='blue', linewidth=2)
+    plt.figure(figsize=(14, 10))
+    plt.plot(valid_epochs, valid_val_loss, label='Validation Loss', color='blue', linewidth=2)
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.title('Validation Loss')
@@ -329,11 +339,19 @@ def main():
     plt.grid(True)
     plt.savefig("plots/val_loss.png", bbox_inches='tight')
     plt.close()
-    content = "bestf1 score {0} : {1}".format(best_f1_score,best_confusion_matrix)
+    content = "bestf1 score {0} : {1} {2} {3} {4}".format(best_f1_score,best_acc,best_precision,best_recall,best_confusion_matrix)
     file_path = os.path.join("plots", "output.txt")
-    with open(file_path, "w") as f:
-        f.write(content)
-    print(content)
+    with open(best_metrics_path, "w") as f:
+        f.write(f"Best F1-score: {best_f1_score:.4f}\n")
+        f.write(f"Accuracy: {best_acc:.4f}\n")
+        f.write(f"Precision: {best_precision:.4f}\n")
+        f.write(f"Recall: {best_recall:.4f}\n")
+    print(f"New best metrics saved to {best_metrics_path}")
+
+    stats_dict['acc'] = best_acc
+    stats_dict['precision'] = best_precision
+    stats_dict['f1_score'] = best_f1_score
+    stats_dict['recall'] = best_recall
     if args.save_stats:
         save_stats_dir = os.path.join('stats', experiment_dir)
         if not os.path.exists(save_stats_dir):
@@ -459,14 +477,21 @@ def validate(val_loader, model, criterion, device):
 
            
         f1 = f1_score(all_targets, all_predictions,average='weighted')
-        print(f"Validation F1 Score: {f1:.4f}")
-        global best_f1_score
+        acc = accuracy_score(all_targets, all_predictions)
+        precision = precision_score(all_targets, all_predictions, average='weighted')
+        recall = recall_score(all_targets, all_predictions, average='weighted')
+        global best_f1_score, best_acc, best_precision, best_recall
         global best_confusion_matrix
         if f1 > best_f1_score:
             best_f1_score = f1
+            best_acc = acc
+            best_precision = precision
+            best_recall = recall
             best_confusion_matrix = f"confusion_matrix_{training_iterations}" 
         summaryWriter.add_scalar('data/f1_score/validation', f1, training_iterations)
-
+        summaryWriter.add_scalar('data/acc/validation', acc, training_iterations)
+        summaryWriter.add_scalar('data/precision/validation', precision, training_iterations)
+        summaryWriter.add_scalar('data/recall/validation', recall, training_iterations)
         summaryWriter.add_scalars('data/loss', {
             'validation': losses.avg,}, training_iterations)
         summaryWriter.add_scalars('data/precision/top1', {
