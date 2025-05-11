@@ -346,6 +346,7 @@ def main():
         f.write(f"Accuracy: {best_acc:.4f}\n")
         f.write(f"Precision: {best_precision:.4f}\n")
         f.write(f"Recall: {best_recall:.4f}\n")
+        f.write(f"Best Confuse Matrix: {best_confusion_matrix}\n")
     print(f"New best metrics saved to {best_metrics_path}")
 
     stats_dict['acc'] = best_acc
