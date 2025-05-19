@@ -2,13 +2,14 @@ from video_records import DataEgo_VideoRecord, MMAct_VideoRecord, mmdata_VideoRe
 import torch.utils.data as data
 from PIL import Image
 import os
-import os.path
+from pathlib import Path
 import pandas as pd
 import numpy as np
 from numpy.random import randint
 import pickle
-
-
+from torchvision.utils import save_image
+import torch
+from torchvision.transforms.functional import to_pil_image
 class MMTSADataSet(data.Dataset):
     def __init__(self, dataset, list_file,
                  new_length, modality, image_tmpl,
@@ -26,7 +27,9 @@ class MMTSADataSet(data.Dataset):
         self.mode = mode
         self.cross_dataset = cross_dataset
 
-
+        
+        self.save_dir = Path("feature_extractor")
+        self.save_dir.mkdir(parents=True, exist_ok=True)
         self._parse_list()
 
 
@@ -158,10 +161,21 @@ class MMTSADataSet(data.Dataset):
             idx_untrimmed = record.start_frame + idx
             if idx_untrimmed==0:
                 idx_untrimmed += 1
-            return [Image.open(os.path.join(video_path, self.image_tmpl[modality].format(idx_untrimmed))).convert('RGB')]
+            img = Image.open(os.path.join(video_path, self.image_tmpl[modality].format(idx_untrimmed))).convert('RGB')
+        
+            # === Print/save before splitting ===
+            debug_path = self.save_dir / f"RGB_segments_label_{record.label}_idx{idx_untrimmed}.png"
+            img.save(debug_path)
+            return [img]
         elif modality =="Sensor":
             sens = self._extract_sensor_feature(record, idx)
-            return [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in sens]
+            normalized = [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in sens]
+            # === Save all GAF channels (before segment split) ===
+            debug_dir = self.save_dir / "debug_full_sensor"
+            debug_dir.mkdir(parents=True, exist_ok=True)
+            for ch, ch_img in enumerate(normalized):
+                ch_img.save(debug_dir / f"Sensor_segments_label_{record.label}_idx{idx}_channel{ch}.png")
+            return [normalized] 
         elif modality =="AccPhone":
             sens = self._extract_accphone_feature(record, idx)
             return [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in sens]
@@ -194,6 +208,7 @@ class MMTSADataSet(data.Dataset):
         :param record: VideoRecord
         :return: list
         """
+        
         average_duration = (record.num_frames[modality] - self.new_length[modality] + 1) // self.num_segments
         if average_duration > 0:
             offsets = np.multiply(list(range(self.num_segments)), average_duration) + randint(average_duration, size=self.num_segments)
@@ -214,6 +229,31 @@ class MMTSADataSet(data.Dataset):
         record = self.video_list[index]
         for m in self.modality:
             if self.mode == 'train':
+                
+                if m == 'RGB':
+                    idx_untrimmed = record.start_frame + record.num_frames[m]
+                    if self.dataset == 'MMAct' or self.dataset == 'AFOSR':
+                        video_path = record.video_path
+                    else:
+                        video_path = os.path.join(os.path.abspath(self.visual_path), record.untrimmed_video_name)
+                    img = Image.open(os.path.join(video_path, self.image_tmpl[m].format(idx_untrimmed))).convert('RGB')
+        
+                    # === Print/save before splitting ===
+                    debug_path = self.save_dir / f"RGB_segments_label_{record.label}_idx{idx_untrimmed}.png"
+                    img.save(debug_path)
+           
+                elif m =="Sensor":
+                    sensor_data = np.load(record.sensor_path, allow_pickle=True).astype('float')[:,:6]
+                    normalized = [Image.fromarray(self._normalization(sensor_data)).convert('L') for sensor_data in sens]
+                    # === Save all GAF channels (before segment split) ===
+                    debug_dir = self.save_dir / "full_sensor"
+                    debug_dir.mkdir(parents=True, exist_ok=True)
+                    for ch, ch_img in enumerate(normalized):
+                        ch_img.save(debug_dir / f"Sensor_segments_label_{record.label}.png")
+
+
+                
+                
                 segment_indices = self._sample_indices(record, m)
             else:
                 segment_indices = self._get_val_indices(record, m)
@@ -224,8 +264,9 @@ class MMTSADataSet(data.Dataset):
 
             img, label = self.get(m, record, segment_indices)
             input[m] = img
-            
-#         print(index, input['RGB'].shape, input['Sensor'].shape)
+
+
+        #print(index, input['RGB'].shape, input['Sensor'].shape)
         return input, label
 
     def get(self, modality, record, indices):
