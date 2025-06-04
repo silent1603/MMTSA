@@ -27,8 +27,8 @@ class MMTSADataSet(data.Dataset):
         self.mode = mode
         self.cross_dataset = cross_dataset
 
-        
-        self.save_dir = Path("feature_extractor")
+        self.save_dir_name = "feature_extractor"
+        self.save_dir = Path(self.save_dir_name)
         self.save_dir.mkdir(parents=True, exist_ok=True)
         self._parse_list()
 
@@ -162,20 +162,23 @@ class MMTSADataSet(data.Dataset):
             if idx_untrimmed==0:
                 idx_untrimmed += 1
             img = Image.open(os.path.join(video_path, self.image_tmpl[modality].format(idx_untrimmed))).convert('RGB')
-        
+            save_dir = Path(os.path.join(os.getcwd(),self.save_dir,f"{modality}_idx{idx}")) 
+            save_dir.mkdir(parents=True, exist_ok=True)
             # === Print/save before splitting ===
-            debug_path = self.save_dir / f"RGB_segments_label_{record.label}_idx{idx_untrimmed}.png"
+            debug_path = save_dir / f"{modality}_segments_label_{record.label}_idx{idx_untrimmed}.png"
             img.save(debug_path)
-            return [img]
+            return [Image.open(os.path.join(video_path, self.image_tmpl[modality].format(idx_untrimmed))).convert('RGB')]
         elif modality =="Sensor":
             sens = self._extract_sensor_feature(record, idx)
             normalized = [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in sens]
             # === Save all GAF channels (before segment split) ===
-            debug_dir = self.save_dir / "debug_full_sensor"
-            debug_dir.mkdir(parents=True, exist_ok=True)
+            save_dir = Path(os.path.join(os.getcwd(),self.save_dir,f"{modality}_idx{idx}")) 
+            save_dir.mkdir(parents=True, exist_ok=True)
+            # === Print/save before splitting ===
             for ch, ch_img in enumerate(normalized):
-                ch_img.save(debug_dir / f"Sensor_segments_label_{record.label}_idx{idx}_channel{ch}.png")
-            return [normalized] 
+                debug_path = save_dir / f"{modality}_segments_label_{record.label}_idx{idx}_channel{ch}.png"
+                ch_img.save(debug_path)
+            return [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in sens] 
         elif modality =="AccPhone":
             sens = self._extract_accphone_feature(record, idx)
             return [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in sens]
@@ -229,30 +232,37 @@ class MMTSADataSet(data.Dataset):
         record = self.video_list[index]
         for m in self.modality:
             if self.mode == 'train':
-                
                 if m == 'RGB':
-                    idx_untrimmed = record.start_frame + record.num_frames[m]
-                    if self.dataset == 'MMAct' or self.dataset == 'AFOSR':
+                    idx = record.start_frame + record.num_frames[m]
+                    if self.dataset in ['MMAct', 'AFOSR']:
                         video_path = record.video_path
                     else:
                         video_path = os.path.join(os.path.abspath(self.visual_path), record.untrimmed_video_name)
-                    img = Image.open(os.path.join(video_path, self.image_tmpl[m].format(idx_untrimmed))).convert('RGB')
-        
+    
+                    img_path = os.path.join(video_path, self.image_tmpl[m].format(idx))
+                    img = Image.open(img_path).convert('RGB')
+                    
+                    save_dir = Path(os.path.join(os.getcwd(),self.save_dir_name,f"{m}_idx{index}")) 
+                    save_dir.mkdir(parents=True, exist_ok=True)
                     # === Print/save before splitting ===
-                    debug_path = self.save_dir / f"RGB_segments_label_{record.label}_idx{idx_untrimmed}.png"
+                    debug_path = save_dir / f"RGB_full_label_{index}_idx{idx}.png"
                     img.save(debug_path)
-           
-                elif m =="Sensor":
-                    sensor_data = np.load(record.sensor_path, allow_pickle=True).astype('float')[:,:6]
-                    normalized = [Image.fromarray(self._normalization(sensor_data)).convert('L') for sensor_data in sens]
-                    # === Save all GAF channels (before segment split) ===
-                    debug_dir = self.save_dir / "full_sensor"
-                    debug_dir.mkdir(parents=True, exist_ok=True)
-                    for ch, ch_img in enumerate(normalized):
-                        ch_img.save(debug_dir / f"Sensor_segments_label_{record.label}.png")
 
+                elif m == "Sensor":
+                    sensor_data = np.load(record.sensor_path, allow_pickle=True).astype('float')[:, :6]
 
-                
+                    # Normalization and Image conversion per channel
+                    normalized_imgs = [Image.fromarray(self._normalization(sensor_data[:, ch])).convert('L') 
+                        for ch in range(sensor_data.shape[1])]
+
+                    save_dir = Path(os.path.join(os.getcwd(),self.save_dir_name,f"{m}_idx{index}"))
+                    save_dir.mkdir(parents=True, exist_ok=True)
+                    # === Print/save before splitting ===
+
+                    for ch, ch_img in enumerate(normalized_imgs):
+                        debug_path = save_dir / f"Sensor_full_label_{index}_channel_{ch}.png"
+                        ch_img.save(debug_path)
+
                 
                 segment_indices = self._sample_indices(record, m)
             else:
