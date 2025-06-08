@@ -9,12 +9,16 @@ from numpy.random import randint
 import pickle
 from torchvision.utils import save_image
 import torch
+from matplotlib import pyplot as plt
 from torchvision.transforms.functional import to_pil_image
+import matplotlib.image
+
 class MMTSADataSet(data.Dataset):
     def __init__(self, dataset, list_file,
                  new_length, modality, image_tmpl,
                  visual_path=None, sensor_path=None,
                  num_segments=3, transform=None,
+                 extract_image = False,
                  mode='train', cross_dataset = False):
         self.dataset = dataset
         self.visual_path = visual_path
@@ -26,7 +30,7 @@ class MMTSADataSet(data.Dataset):
         self.transform = transform
         self.mode = mode
         self.cross_dataset = cross_dataset
-
+        self.extract_image = extract_image
         self.save_dir_name = "feature_extractor"
         self.save_dir = Path(self.save_dir_name)
         self.save_dir.mkdir(parents=True, exist_ok=True)
@@ -44,6 +48,8 @@ class MMTSADataSet(data.Dataset):
     def _normalization(self, data, scale = 255.0):
         _range = np.max(data) - np.min(data)
         return (data - np.min(data)) / _range * 255.0
+    
+
 
     def _extract_sensor_feature(self, record, idx):
 
@@ -54,6 +60,42 @@ class MMTSADataSet(data.Dataset):
         right_sec = centre_sec + 1.0
         # sensor数据 (行数 x 6个channel)
         sensor_data = np.load(record.sensor_path, allow_pickle=True).astype('float')[:,:6]
+        save_dir = Path(os.path.join(os.getcwd(),self.save_dir_name,f"Sensor_idx{idx}"))
+        save_dir.mkdir(parents=True, exist_ok=True)
+        # === Print/save before splitting ===
+        if self.extract_image :
+            full_data_raw = self._GramianAngularField(sensor_data.transpose(), record.fps['Sensor'])
+            normalized = [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in full_data_raw]
+
+            # Extract channels
+            iddecode = { 0 : 'acc_x',
+                     1 : 'acc_y',
+                     2 : 'accy_z',
+                     3 : 'gyro_x',
+                     4 : 'gyro_y',
+                     5 : 'gyro_z'
+            }
+
+            acc_x_data = normalized[0]
+            acc_y_data = normalized[1]
+            acc_z_data = normalized[2]
+            gyro_x_data = normalized[3]
+            gyro_y_data = normalized[4]
+            gyro_z_data = normalized[5]
+
+            # Merge into RGB
+            acc_rgb_img = Image.merge("RGB", (acc_x_data, acc_y_data, acc_z_data))
+            acc_save_path =  save_dir / f"acc_idx{idx}.png"
+            acc_rgb_img.save(acc_save_path)
+            gyro_rgb_img = Image.merge("RGB", (gyro_x_data, gyro_y_data, gyro_z_data))
+            gyro_save_path =  save_dir / f"gyro_idx{idx}.png"
+            gyro_rgb_img.save(gyro_save_path)
+        
+            for ch, ch_img in enumerate(normalized):
+                debug_path = save_dir / f"idx{idx}_{iddecode[ch]}.png"
+                ch_img.save(debug_path)    
+        
+
         duration = sensor_data.shape[0] / float(record.fps['Sensor'])
 
         left_sample = int(round(left_sec * record.fps['Sensor']))
@@ -156,29 +198,36 @@ class MMTSADataSet(data.Dataset):
             video_path = record.video_path
         else:
             video_path = os.path.join(os.path.abspath(self.visual_path), record.untrimmed_video_name)
-            
         if modality == 'RGB':
+    
             idx_untrimmed = record.start_frame + idx
             if idx_untrimmed==0:
                 idx_untrimmed += 1
-            img = Image.open(os.path.join(video_path, self.image_tmpl[modality].format(idx_untrimmed))).convert('RGB')
-            save_dir = Path(os.path.join(os.getcwd(),self.save_dir,f"{modality}_idx{idx}")) 
-            save_dir.mkdir(parents=True, exist_ok=True)
-            # === Print/save before splitting ===
-            debug_path = save_dir / f"{modality}_segments_label_{record.label}_idx{idx_untrimmed}.png"
-            img.save(debug_path)
+            if self.extract_image: 
+                img = Image.open(os.path.join(video_path, self.image_tmpl[modality].format(idx_untrimmed))).convert('RGB')
+                save_dir = Path(os.path.join(os.getcwd(),self.save_dir,f"{modality}_idx{idx}")) 
+                save_dir.mkdir(parents=True, exist_ok=True)
+                # === Print/save before splitting ===
+                debug_path = save_dir / f"{modality}_segments_label_{record.label}_idx{idx_untrimmed}.png"
+                img.save(debug_path)
+            
             return [Image.open(os.path.join(video_path, self.image_tmpl[modality].format(idx_untrimmed))).convert('RGB')]
+        
         elif modality =="Sensor":
+    
             sens = self._extract_sensor_feature(record, idx)
-            normalized = [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in sens]
-            # === Save all GAF channels (before segment split) ===
-            save_dir = Path(os.path.join(os.getcwd(),self.save_dir,f"{modality}_idx{idx}")) 
-            save_dir.mkdir(parents=True, exist_ok=True)
-            # === Print/save before splitting ===
-            for ch, ch_img in enumerate(normalized):
-                debug_path = save_dir / f"{modality}_segments_label_{record.label}_idx{idx}_channel{ch}.png"
-                ch_img.save(debug_path)
+            if self.extract_image: 
+                normalized = [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in sens]
+                # === Save all GAF channels (before segment split) ===
+                save_dir = Path(os.path.join(os.getcwd(),self.save_dir,f"{modality}_idx{idx}")) 
+                save_dir.mkdir(parents=True, exist_ok=True)
+                # === Print/save before splitting ===
+                for ch, ch_img in enumerate(normalized):
+                    debug_path = save_dir / f"{modality}_segments_label_{record.label}_idx{idx}_channel{ch}.png"
+                    ch_img.save(debug_path)
+                
             return [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in sens] 
+    
         elif modality =="AccPhone":
             sens = self._extract_accphone_feature(record, idx)
             return [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in sens]
@@ -238,30 +287,16 @@ class MMTSADataSet(data.Dataset):
                         video_path = record.video_path
                     else:
                         video_path = os.path.join(os.path.abspath(self.visual_path), record.untrimmed_video_name)
-    
-                    img_path = os.path.join(video_path, self.image_tmpl[m].format(idx))
-                    img = Image.open(img_path).convert('RGB')
+
+                    if self.extract_image :
+                        img_path = os.path.join(video_path, self.image_tmpl[m].format(idx))
+                        img = Image.open(img_path).convert('RGB')
                     
-                    save_dir = Path(os.path.join(os.getcwd(),self.save_dir_name,f"{m}_idx{index}")) 
-                    save_dir.mkdir(parents=True, exist_ok=True)
-                    # === Print/save before splitting ===
-                    debug_path = save_dir / f"RGB_full_label_{index}_idx{idx}.png"
-                    img.save(debug_path)
-
-                elif m == "Sensor":
-                    sensor_data = np.load(record.sensor_path, allow_pickle=True).astype('float')[:, :6]
-
-                    # Normalization and Image conversion per channel
-                    normalized_imgs = [Image.fromarray(self._normalization(sensor_data[:, ch])).convert('L') 
-                        for ch in range(sensor_data.shape[1])]
-
-                    save_dir = Path(os.path.join(os.getcwd(),self.save_dir_name,f"{m}_idx{index}"))
-                    save_dir.mkdir(parents=True, exist_ok=True)
-                    # === Print/save before splitting ===
-
-                    for ch, ch_img in enumerate(normalized_imgs):
-                        debug_path = save_dir / f"Sensor_full_label_{index}_channel_{ch}.png"
-                        ch_img.save(debug_path)
+                        save_dir = Path(os.path.join(os.getcwd(),self.save_dir_name,f"{m}_idx{index}")) 
+                        save_dir.mkdir(parents=True, exist_ok=True)
+                        # === Print/save before splitting ===
+                        debug_path = save_dir / f"RGB_full_label_{index}_idx{idx}.png"
+                        img.save(debug_path)
 
                 
                 segment_indices = self._sample_indices(record, m)
