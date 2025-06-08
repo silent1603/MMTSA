@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/train.py",
             "console": "integratedTerminal",
             "args": "AFOSR  RGB Sensor --arch=BNInception --train_list train_afosr_file --val_list test_afosr_file --visual_path data\\AFOSR\\images --save_stats"
-        }, 
+        },
         {
             "name": "Python Debugger (AFSOR -  mobilenetv2)",
             "type": "debugpy",
@@ -28,7 +28,6 @@
             "console": "integratedTerminal",
             "args": "AFOSR  RGB Sensor --arch=resnet101 --train_list train_afosr_file --val_list test_afosr_file --visual_path data\\AFOSR\\images --save_stats"
         },
-
         {
             "name": "Python Debugger (AFSOR -  resnet50)",
             "type": "debugpy",
@@ -43,7 +42,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/train.py",
             "console": "integratedTerminal",
-            "args": "dataEgo  RGB Sensor --arch=BNInception --train_list train_dataego_file --val_list test_dataego_file --visual_path data\\DataEgo\\images --save_stats"
+            "args": "dataEgo  RGB Sensor --arch=BNInception --train_list train_dataego_file --val_list test_dataego_file --visual_path data\\DataEgo\\images --save_stats --epochs 1"
         },
         {
             "name": "Python Debugger (DataEgo - mobilenetv2)",
@@ -68,6 +67,13 @@
             "program": "${workspaceFolder}/train.py",
             "console": "integratedTerminal",
             "args": "dataEgo  RGB Sensor --arch=resnet50 --train_list train_dataego_file --val_list test_dataego_file --visual_path data\\DataEgo\\images --save_stats"
+        },
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
         }
     ]
 }

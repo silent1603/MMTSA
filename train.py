@@ -231,6 +231,7 @@ def main():
                    sensor_path=args.sensor_path,
                    num_segments=args.num_segments,
                    transform=train_transform,
+                   extract_image = args.extract_feature_image,
                    cross_dataset = False),
         batch_size=args.batch_size, shuffle=True,
         num_workers=args.workers, pin_memory=True)
@@ -246,6 +247,7 @@ def main():
                    num_segments=args.num_segments,
                    mode='val',
                    transform=val_transform,
+                   extract_image = args.extract_feature_image,
                    cross_dataset = False),
         batch_size=args.batch_size, shuffle=True,
         num_workers=args.workers, pin_memory=True)
