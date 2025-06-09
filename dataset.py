@@ -60,10 +60,10 @@ class MMTSADataSet(data.Dataset):
         right_sec = centre_sec + 1.0
         # sensor数据 (行数 x 6个channel)
         sensor_data = np.load(record.sensor_path, allow_pickle=True).astype('float')[:,:6]
-        save_dir = Path(os.path.join(os.getcwd(),self.save_dir_name,f"Sensor_idx{idx}"))
-        save_dir.mkdir(parents=True, exist_ok=True)
         # === Print/save before splitting ===
         if self.extract_image :
+            save_dir = Path(os.path.join(os.getcwd(),self.save_dir_name,f"Sensor_idx{idx}"))
+            save_dir.mkdir(parents=True, exist_ok=True)
             full_data_raw = self._GramianAngularField(sensor_data.transpose(), record.fps['Sensor'])
             normalized = [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in full_data_raw]
 

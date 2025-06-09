@@ -16,6 +16,7 @@ from datetime import datetime
 from collections import OrderedDict
 from sklearn.metrics import f1_score,confusion_matrix, ConfusionMatrixDisplay,accuracy_score, precision_score, recall_score
 import matplotlib.pyplot as plt
+import time
 best_prec1 = 0
 training_iterations = 0
 best_loss = 10000000
@@ -23,6 +24,8 @@ best_f1_score = 0
 best_acc = 0
 best_precision = 0
 best_recall = 0
+best_peak_memory = 0
+best_cached_memory = 0
 best_metrics_path = "plots/best_metrics.txt"
 best_confusion_matrix = ""
 args = parser.parse_args()
@@ -121,6 +124,9 @@ afosr_activity_labels = {
 }
 
 def main():
+    start = time.perf_counter()
+    global best_peak_memory
+    global best_cached_memory
     global args, best_prec1, train_list, experiment_dir, best_loss
     args = parser.parse_args()
     global data_label 
@@ -312,7 +318,9 @@ def main():
             'best_prec1': best_prec1,
             }, is_best)
 
+
     summaryWriter.close()
+    end = time.perf_counter()
     global best_f1_score, best_acc, best_precision, best_recall, best_metrics_path
     global best_confusion_matrix
     train_loss = stats_dict['train_loss'][:args.epochs]
@@ -342,13 +350,17 @@ def main():
     plt.savefig("plots/val_loss.png", bbox_inches='tight')
     plt.close()
     content = "bestf1 score {0} : {1} {2} {3} {4}".format(best_f1_score,best_acc,best_precision,best_recall,best_confusion_matrix)
+    print(content)
     file_path = os.path.join("plots", "output.txt")
-    with open(best_metrics_path, "w") as f:
+    with open(file_path, "w") as f:
         f.write(f"Best F1-score: {best_f1_score:.4f}\n")
         f.write(f"Accuracy: {best_acc:.4f}\n")
         f.write(f"Precision: {best_precision:.4f}\n")
         f.write(f"Recall: {best_recall:.4f}\n")
         f.write(f"Best Confuse Matrix: {best_confusion_matrix}\n")
+        f.write(f"Elapsed time: {end - start:.6f} seconds")
+        f.write(f"Peak GPU Memory: {best_peak_memory:.2f} MB")
+        f.write(f"Cached GPU Memory: {best_cached_memory:.2f} MB")
     print(f"New best metrics saved to {best_metrics_path}")
 
     stats_dict['acc'] = best_acc
@@ -437,6 +449,16 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
                     lr=optimizer.param_groups[-1]['lr']))
             
             print(message)
+            # print GPU memory usage after update
+            global best_peak_memory
+            global best_cached_memory
+            peak_memory =  torch.cuda.memory_allocated() / 1024**2
+            cached_memory = torch.cuda.memory_reserved() / 1024**2
+            if best_peak_memory < peak_memory:
+                best_peak_memory = peak_memory
+            
+            if best_cached_memory < cached_memory:
+                best_cached_memory = cached_memory
 
     training_metrics = {'train_loss': losses.avg, 'train_acc': top1.avg}
     return training_metrics
