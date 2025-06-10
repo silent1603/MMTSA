@@ -358,9 +358,9 @@ def main():
         f.write(f"Precision: {best_precision:.4f}\n")
         f.write(f"Recall: {best_recall:.4f}\n")
         f.write(f"Best Confuse Matrix: {best_confusion_matrix}\n")
-        f.write(f"Elapsed time: {end - start:.6f} seconds")
-        f.write(f"Peak GPU Memory: {best_peak_memory:.2f} MB")
-        f.write(f"Cached GPU Memory: {best_cached_memory:.2f} MB")
+        f.write(f"Elapsed time: {end - start:.6f} seconds\n")
+        f.write(f"Peak GPU Memory: {best_peak_memory:.2f} MB\n")
+        f.write(f"Cached GPU Memory: {best_cached_memory:.2f} MB\n")
     print(f"New best metrics saved to {best_metrics_path}")
 
     stats_dict['acc'] = best_acc

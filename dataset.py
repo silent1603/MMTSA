@@ -13,6 +13,86 @@ from matplotlib import pyplot as plt
 from torchvision.transforms.functional import to_pil_image
 import matplotlib.image
 
+
+data_ego_activity_labels_reversed = {
+    0: 'cooking',
+    1: 'cycling',
+    2: 'riding elevator',
+    3: 'walking down/upstairs',
+    4: 'push ups',
+    5: 'reading',
+    6: 'washing dishes',
+    7: 'working on pc',
+    8: 'browsing mobile phone',
+    9: 'talking with people',
+    10: 'chopping',
+    11: 'sit ups',
+    12: 'running',
+    13: 'lying down',
+    14: 'eating',
+    15: 'riding escalator',
+    16: 'writing',
+    17: 'brushing teeth',
+    18: 'watching tv',
+    19: 'walking'
+}
+
+mmact_activity_labels_reversed = {
+    0: "carrying",
+    1: "checking_time",
+    2: "closing",
+    3: "crouching",
+    4: "entering",
+    5: "exiting",
+    6: "fall",
+    7: "jumping",
+    8: "kicking",
+    9: "loitering",
+    10: "looking_around",
+    11: "opening",
+    12: "picking_up",
+    13: "pointing",
+    14: "pulling",
+    15: "pushing",
+    16: "running",
+    17: "setting_down",
+    18: "standing",
+    19: "talking",
+    20: "talking_on_phone",
+    21: "throwing",
+    22: "transferring_object",
+    23: "using_phone",
+    24: "walking",
+    25: "waving_hand",
+    26: "drinking",
+    27: "pocket_in",
+    28: "pocket_out",
+    29: "sitting",
+    30: "sitting_down",
+    31: "standing_up",
+    32: "talking_on_phone_desk",
+    33: "using_pc",
+    34: "using_phone_desk",
+    35: "carrying_heavy",
+    36: "carrying_light"
+}
+
+afosr_activity_labels_reversed = {
+    0: 'G1',
+    1: 'G2',
+    2: 'G3',
+    3: 'G4',
+    4: 'G5',
+    5: 'G6',
+    6: 'G7',
+    7: 'G8',
+    8: 'G9',
+    9: 'G10',
+    10: 'G11',
+    11: 'G12'
+}
+
+
 class MMTSADataSet(data.Dataset):
     def __init__(self, dataset, list_file,
                  new_length, modality, image_tmpl,
@@ -52,7 +132,9 @@ class MMTSADataSet(data.Dataset):
 
 
     def _extract_sensor_feature(self, record, idx):
-
+        global data_ego_activity_labels_reversed
+        global mmact_activity_labels_reversed
+        global afosr_activity_labels_reversed
         # 确定中间秒
         centre_sec = (record.start_frame + idx) / record.fps['Sensor']
         # 左右各1s
@@ -62,7 +144,15 @@ class MMTSADataSet(data.Dataset):
         sensor_data = np.load(record.sensor_path, allow_pickle=True).astype('float')[:,:6]
         # === Print/save before splitting ===
         if self.extract_image :
-            save_dir = Path(os.path.join(os.getcwd(),self.save_dir_name,f"Sensor_idx{idx}"))
+            labelName = ''
+            if self.dataset == 'MMAct' :
+                labelName = mmact_activity_labels_reversed[record.label]
+            elif self.dataset ==  'AFOSR' :
+                labelName = afosr_activity_labels_reversed[record.label]
+            elif self.dataset == 'dataEgo' :
+                labelName = data_ego_activity_labels_reversed[record.label]
+
+            save_dir = Path(os.path.join(os.getcwd(),self.save_dir_name,f"Sensor_idx{idx}_label_{labelName}"))
             save_dir.mkdir(parents=True, exist_ok=True)
             full_data_raw = self._GramianAngularField(sensor_data.transpose(), record.fps['Sensor'])
             normalized = [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in full_data_raw]
@@ -194,6 +284,16 @@ class MMTSADataSet(data.Dataset):
 
 
     def _load_data(self, modality, record, idx):
+        global data_ego_activity_labels_reversed
+        global mmact_activity_labels_reversed
+        global afosr_activity_labels_reversed
+        labelName = ''
+        if self.dataset == 'MMAct':
+            labelName = mmact_activity_labels_reversed[record.label]
+        elif self.dataset ==  'AFOSR':
+            labelName = afosr_activity_labels_reversed[record.label]
+        elif self.dataset == 'dataEgo':
+            labelName = data_ego_activity_labels_reversed[record.label]
         if self.dataset == 'MMAct' or self.dataset == 'AFOSR':
             video_path = record.video_path
         else:
@@ -205,7 +305,7 @@ class MMTSADataSet(data.Dataset):
                 idx_untrimmed += 1
             if self.extract_image: 
                 img = Image.open(os.path.join(video_path, self.image_tmpl[modality].format(idx_untrimmed))).convert('RGB')
-                save_dir = Path(os.path.join(os.getcwd(),self.save_dir,f"{modality}_idx{idx}")) 
+                save_dir = Path(os.path.join(os.getcwd(),self.save_dir,f"{modality}_idx{idx}_label_{labelName}")) 
                 save_dir.mkdir(parents=True, exist_ok=True)
                 # === Print/save before splitting ===
                 debug_path = save_dir / f"{modality}_segments_label_{record.label}_idx{idx_untrimmed}.png"
@@ -219,7 +319,7 @@ class MMTSADataSet(data.Dataset):
             if self.extract_image: 
                 normalized = [Image.fromarray(self._normalization(single_channel)).convert('L') for single_channel in sens]
                 # === Save all GAF channels (before segment split) ===
-                save_dir = Path(os.path.join(os.getcwd(),self.save_dir,f"{modality}_idx{idx}")) 
+                save_dir = Path(os.path.join(os.getcwd(),self.save_dir,f"{modality}_idx{idx}_label_{labelName}")) 
                 save_dir.mkdir(parents=True, exist_ok=True)
                 # === Print/save before splitting ===
                 for ch, ch_img in enumerate(normalized):
@@ -277,6 +377,9 @@ class MMTSADataSet(data.Dataset):
         return offsets
 
     def __getitem__(self, index):
+        global data_ego_activity_labels_reversed
+        global mmact_activity_labels_reversed
+        global afosr_activity_labels_reversed
         input = {}
         record = self.video_list[index]
         for m in self.modality:
@@ -291,8 +394,15 @@ class MMTSADataSet(data.Dataset):
                     if self.extract_image :
                         img_path = os.path.join(video_path, self.image_tmpl[m].format(idx))
                         img = Image.open(img_path).convert('RGB')
-                    
-                        save_dir = Path(os.path.join(os.getcwd(),self.save_dir_name,f"{m}_idx{index}")) 
+                        labelName = ''
+                        if self.dataset == 'MMAct':
+                            labelName = mmact_activity_labels_reversed[record.label]
+                        elif self.dataset ==  'AFOSR':
+                            labelName = afosr_activity_labels_reversed[record.label]
+                        elif self.dataset == 'dataEgo':
+                            labelName = data_ego_activity_labels_reversed[record.label]
+
+                        save_dir = Path(os.path.join(os.getcwd(),self.save_dir_name,f"{m}_idx{index}_label_{labelName}")) 
                         save_dir.mkdir(parents=True, exist_ok=True)
                         # === Print/save before splitting ===
                         debug_path = save_dir / f"RGB_full_label_{index}_idx{idx}.png"
