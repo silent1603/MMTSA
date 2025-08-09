@@ -3,21 +3,19 @@ channels:
   - pytorch
   - conda-forge
   - defaults
-  - nvidia/label/cuda-12.1.0
 dependencies:
-  - python=3.10
-  - numpy=1.24
+  - python
+  - numpy
   - pandas
   - tqdm
   - pillow
   - scikit-learn
   - einops
-  - pytorch=2.1.0  # Or latest compatible version with CUDA 12
-  - torchvision
-  - pytorch-cuda=12.1  # CUDA 12.1 Toolkit (provided by PyTorch channel)
-  - cuda-nvtx
-  - tensorboardX
-  - pip
   - matplotlib
+  - tensorboardX
+  - pytorch
+  - torchvision
+  - pip
+  - pyyaml
   - pip:
       - pyts

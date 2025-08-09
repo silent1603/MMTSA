@@ -289,11 +289,11 @@ class MMTSADataSet(data.Dataset):
         global afosr_activity_labels_reversed
         labelName = ''
         if self.dataset == 'MMAct':
-            labelName = mmact_activity_labels_reversed[record.label]
+            labelName = mmact_activity_labels_reversed[int(record.label)]
         elif self.dataset ==  'AFOSR':
-            labelName = afosr_activity_labels_reversed[record.label]
+            labelName = afosr_activity_labels_reversed[int(record.label)]
         elif self.dataset == 'dataEgo':
-            labelName = data_ego_activity_labels_reversed[record.label]
+            labelName = data_ego_activity_labels_reversed[int(record.label)]
         if self.dataset == 'MMAct' or self.dataset == 'AFOSR':
             video_path = record.video_path
         else:
